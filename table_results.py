@@ -20,6 +20,9 @@ filenames = [
     "output/pricing_confounded_5.pkl"
 ]
 
+def percentage(x, y):
+    return np.round(((y - x) / x) * 100, 2)
+
 for k, filename in enumerate(filenames):
     with open(filename, 'rb') as file:
         res = pickle.load(file)
@@ -75,37 +78,37 @@ for k, filename in enumerate(filenames):
     baseline_R = mean_rewards[0]
 
     if filename == "output/pricing_specs.pkl":
-        print(fr"""     ${{\gG}}$                                                   &     -     &   {mean_rewards[0][-1]}   &  {mean_rewards[1][-1]}    & - \\ """)
+        print(fr"""     ${{\gG}}$                                                   &     -     &   {mean_rewards[0][-1]}   &  {mean_rewards[1][-1]}    & -                 & {percentage(mean_rewards[0][-1], mean_rewards[1][-1])} \\ """)
         print(fr"""                                                                 &           &   ({std_devs[0]})         &  ({std_devs[0]})          & - \\ \addlinespace""")
         continue
 
     alpha = filename.split("/")[1].split("_")[-1].split(".pkl")[0]
     if filename == "output/pricing_no_markov_0.pkl":
-        print(fr"""  $\overset{{\textcolor{{yellow}}{{\longrightarrow}}}}{{\gG}}$   &  {alpha}  &   {mean_rewards[0][-1]}   &  {mean_rewards[1][-1]}    & - \\ """)
-        print(fr"""                                                                 &           &   ({std_devs[0]})         &  ({std_devs[1]})          & - \\ \addlinespace""")
+        print(fr"""  $\overset{{\textcolor{{yellow}}{{\longrightarrow}}}}{{\gG}}$   &  {alpha}  &   {mean_rewards[0][-1]}   &  {mean_rewards[1][-1]}    & -                 & {percentage(mean_rewards[0][-1], mean_rewards[1][-1])} \\ """)
+        print(fr"""                                                                 &           &   ({std_devs[0]})         &  ({std_devs[1]})          & -     \\ \addlinespace""")
     elif filename in [
             "output/pricing_no_markov_0.1.pkl",
             # "output/pricing_no_markov_0.25.pkl",
             "output/pricing_no_markov_0.5.pkl",
             # "output/pricing_no_markov_0.75.pkl",
             "output/pricing_no_markov_0.9.pkl",]:
-        print(fr"""                                                                 &  {alpha}  &   {mean_rewards[0][-1]}   &  {mean_rewards[1][-1]}    & - \\ """)
+        print(fr"""                                                                 &  {alpha}  &   {mean_rewards[0][-1]}   &  {mean_rewards[1][-1]}    & -                     & {percentage(mean_rewards[0][-1], mean_rewards[1][-1])}\\ """)
         print(fr"""                                                                 &           &   ({std_devs[0]})         &  ({std_devs[1]})          &  \\ \addlinespace""")
     if filename == "output/pricing_dyn_back_door_0.1.pkl":
-        print(fr"""  $\overset{{\textcolor{{green}}{{\longrightarrow}}}}{{\gG}}$    &  {alpha}  &   {mean_rewards[0][-1]}   &  {mean_rewards[1][-1]}    & {mean_rewards[2][-1]} \\ """)
+        print(fr"""  $\overset{{\textcolor{{green}}{{\longrightarrow}}}}{{\gG}}$    &  {alpha}  &   {mean_rewards[0][-1]}   &  {mean_rewards[1][-1]}    & {mean_rewards[2][-1]} & {percentage(mean_rewards[0][-1], mean_rewards[1][-1])} \\ """)
         print(fr"""                                                                 &           &   ({std_devs[0]})         &  ({std_devs[1]})          & ({std_devs[2]}) \\ \addlinespace""")
     elif filename in [
             "output/pricing_dyn_back_door_0.5.pkl",
             "output/pricing_dyn_back_door_1.pkl"]:
-        print(fr"""                                                                 &  {alpha}  &   {mean_rewards[0][-1]}   &  {mean_rewards[1][-1]}    & {mean_rewards[2][-1]} \\ """)
+        print(fr"""                                                                 &  {alpha}  &   {mean_rewards[0][-1]}   &  {mean_rewards[1][-1]}    & {mean_rewards[2][-1]} & {percentage(mean_rewards[0][-1], mean_rewards[1][-1])} \\ """)
         print(fr"""                                                                 &           &   ({std_devs[0]})         &  ({std_devs[1]})          & ({std_devs[2]}) \\ \addlinespace""")
     if filename == "output/pricing_confounded_0.pkl":
-        print(fr"""  $\overset{{\textcolor{{red}}{{\longrightarrow}}}}{{\gG}}$      &  {alpha}  &   {mean_rewards[0][-1]}   &  {mean_rewards[1][-1]}    &  - \\ """)
+        print(fr"""  $\overset{{\textcolor{{red}}{{\longrightarrow}}}}{{\gG}}$      &  {alpha}  &   {mean_rewards[0][-1]}   &  {mean_rewards[1][-1]}    &  -                    & {percentage(mean_rewards[0][-1], mean_rewards[1][-1])} \\""")
         print(fr"""                                                                 &           &   ({std_devs[0]})         &  ({std_devs[1]})          &   \\ \addlinespace""")
     elif filename in [
             "output/pricing_confounded_1.pkl",
             "output/pricing_confounded_3.pkl",
             "output/pricing_confounded_5.pkl"]:
-        print(fr"""                                                                 &  {alpha}  &   {mean_rewards[0][-1]}   &  {mean_rewards[1][-1]}    &  - \\ """)
+        print(fr"""                                                                 &  {alpha}  &   {mean_rewards[0][-1]}   &  {mean_rewards[1][-1]}    &  -                    & {percentage(mean_rewards[0][-1], mean_rewards[1][-1])} \\""")
         print(fr"""                                                                 &           &   ({std_devs[0]})         &  ({std_devs[1]})          &   \\ \addlinespace""")
 

@@ -1,19 +1,32 @@
 state:
   1: ["DE", "L1"]
   2: ["DE", "A1"]
-correct_state:
-  1: ["DE", "L1"]
-  2: ["DE", "A1", "A2"]
 action:
   1: ["A1", "A2"]
 reward:
   0: ["R"]
 variables:
-  D:
+  U1:
     kernel:
       type: "uniform"
-      domain: [0, 1]
+      domain: [1, 2, 3]
+      terms: null
     dependencies: null
+    level_offset: 0
+  D:
+    kernel:
+      type: "linear"
+      sample_domain: [0, 1]
+      noise:
+        type: "random"
+        prob: 1 # 1. Markov parameter
+      intercept: 0
+      terms:
+        - param: 1
+          variables:
+            1: ["D"]
+    dependencies:
+      1: ["D"]
     level_offset: 0
   DE:
     kernel:
@@ -38,6 +51,14 @@ variables:
       noise:
         type: "random"
         prob: 0.15
+      indicator_terms:
+        - type: "greater_than_variable"
+          variable:
+            1: ["U1"]
+          threshold:
+            1: ["A1"]
+          intercept: 0 # 3. Confounding parameter.
+          terms: null
       intercept: 1
       terms:
         - param: -0.65
@@ -47,7 +68,7 @@ variables:
           variables:
             1: ["A1", "A1", "D"]
     dependencies:
-      1: ["D", "A1"]
+      1: ["D", "A1", "U1"]
     level_offset: 0
   L2:
     kernel:
@@ -61,13 +82,13 @@ variables:
         prob: 0.15
       intercept: 1
       terms:
-        - param: 1 # Dyn. Back-door parameter
+        - param: 1 # 2. Dyn. Back-door parameter
           variables:
             2: ["A2"]
         - param: -0.65
           variables:
             1: ["A2", "A2"]
-        - param: 0.1 # lowered this to increase effect.
+        - param: 0.2
           variables:
             1: ["A2", "A2"]
             2: ["D"]
@@ -80,9 +101,6 @@ variables:
       type: "linear"
       sample_domain: [0]
       lower_bound: 0
-      noise:
-        type: "random"
-        prob: 0.15
       terms:
         - param: 1
           variables:
@@ -98,20 +116,49 @@ variables:
     level_offset: 0
   A1:
     kernel:
-      type: "linear"
-      sample_domain: [1, 2, 3]
-      lower_bound: 1
-      upper_bound: 3
-      noise:
-        type: "random"
-        prob: 0.15
-      intercept: 1
-      terms:
-        - param: 1
-          variables:
-            0: ["DE"]
+      type: "mixed"
+      mixed_probs: [1, 0] # 3. Confounding parameter.
+      kernels:
+        - type: "linear"
+          sample_domain: [1, 2, 3]
+          lower_bound: 1
+          upper_bound: 3
+          noise:
+            type: "random"
+            prob: 0.15
+          indicator_terms:
+            - type: "multiple"
+              indicators:
+                - type: "greater_than_value"
+                  variable:
+                    0: ["L1"]
+                  threshold: 0
+                - type: "greater_or_equal_than_value"
+                  variable:
+                    1: ["A1"]
+                  threshold: 2
+              intercept: 1
+              terms: null
+          intercept: 1
+          terms:
+            - param: 1
+              variables:
+                0: ["DE"]
+        - type: "linear"
+          sample_domain: [1, 2, 3]
+          lower_bound: 1
+          upper_bound: 3
+          noise:
+            type: "random"
+            prob: 0.15
+          intercept: -1
+          terms:
+            - param: 1
+              variables:
+                0: ["U1"]
     dependencies:
-      0: ["DE"]
+      0: ["DE", "L1", "U1"]
+      1: ["A1"]
     level_offset: 0.1
   A2:
     kernel:
@@ -121,7 +168,7 @@ variables:
       upper_bound: 3
       noise:
         type: "random"
-        prob: 0.15
+        prob: 0.1
       indicator_terms:
         - type: "multiple"
           indicators:
@@ -138,12 +185,20 @@ variables:
             - param: 1
               variables:
                 1: ["A1"]
-      intercept: 0
+      intercept: 1
       terms:
-        - param: 1
+        - param: 1 # 2. Dyn. Back-door parameter
           variables:
             1: ["A2"]
     dependencies:
       0: ["L1"]
       1: ["A1", "A2"]
     level_offset: 0.1
+correct_state:
+  1:
+    - DE
+    - L1
+  2:
+    - DE
+    - A1
+    - A2

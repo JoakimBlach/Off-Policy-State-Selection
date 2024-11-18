@@ -82,6 +82,9 @@ variables:
         prob: 0.15
       intercept: 1
       terms:
+        - param: 0 # 2. Dyn. Back-door parameter
+          variables:
+            2: ["A2"]
         - param: -0.65
           variables:
             1: ["A2", "A2"]
@@ -91,7 +94,7 @@ variables:
             2: ["D"]
     dependencies:
       1: ["L1", "A2"]
-      2: ["D"]
+      2: ["D", "A2"]
     level_offset: 0
   R:
     kernel:
@@ -183,8 +186,11 @@ variables:
               variables:
                 1: ["A1"]
       intercept: 1
-      terms: null
+      terms:
+        - param: 0 # 2. Dyn. Back-door parameter
+          variables:
+            1: ["A2"]      
     dependencies:
       0: ["L1"]
-      1: ["A1"]
+      1: ["A1", "A2"]
     level_offset: 0.1
