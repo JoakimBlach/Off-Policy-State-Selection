@@ -1,0 +1,64 @@
+state: 
+  1: ["X"]
+action: 
+  1: ["A"]
+reward: 
+  0: ["R"]
+variables:
+  U:
+    kernel: 
+      type: "uniform"
+      domain: [-1, 1]
+      terms: null
+    dependencies: null
+    level_offset: 0
+  X:
+    kernel:
+      type: "linear"
+      noise: 
+        type: "random"
+        prob: 0.2
+      sample_domain: [-1.1, 0.0, 1.1, 2.9]
+      intercept: 1
+      terms:
+        - param: -1
+          variables:
+            1: ["U"]
+        - param: 1
+          variables:
+            1: ["A", "U"]
+        - param: 0.1
+          variables:
+            1: ["A"]
+    dependencies:
+      1: ["A", "U"]
+    level_offset: 0
+  A:
+    kernel:
+      type: "linear"
+      noise: 
+        type: "random"
+        prob: 0.2
+      sample_domain: [-1, 1]
+      terms:
+        - param: 1
+          variables:
+            0: ["U"]
+    dependencies:
+      0: ["U"]
+    level_offset: 0.1
+  R:
+    kernel: 
+      type: "binomial"
+      sample_domain: [0, 1]
+      dim: 2
+      terms:
+        - param: 0.1
+          variables:
+            1: ["A"]
+        - param: 1
+          variables:
+            1: ["X"]
+    dependencies:
+      1: ["A", "X"]
+    level_offset: 0

@@ -1,0 +1,46 @@
+state: null
+correct_state:
+  1: ["X"]
+action: 
+  1: ["A"]
+reward: 
+  0: ["R"]
+variables:
+  X:
+    kernel: 
+      type: "linear"
+      lower_bound: 0
+      sample_domain: [0, 1]
+      terms:
+        - param: -1
+          variables:
+            1: ["A"]
+    dependencies:
+      1: ["A"]
+    level_offset: 0
+  A:
+    kernel:
+      type: "uniform"
+      domain: [-1, 1]
+      prob: [0.8, 0.2]
+      terms: null
+    dependencies: null
+    level_offset: 0.1
+  R:
+    kernel: 
+      type: "linear"
+      lower_bound: 0
+      noise: 
+        type: "random"
+        prob: 0.4
+      sample_domain: [0.0, 0.1, 0.9, 1.1]
+      terms:
+        - param: 0.1
+          variables:
+            1: ["A"]
+        - param: 1
+          variables:
+            1: ["X"]
+    dependencies:
+      1: ["A", "X"]
+    level_offset: 0
