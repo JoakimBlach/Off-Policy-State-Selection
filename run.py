@@ -27,7 +27,7 @@ from tqdm import tqdm
 from joblib import Parallel, delayed
 from scipy import optimize
 from scipy.integrate import quad
-from dag import DAG_Simulator
+from graph_simulator import DAG_Simulator
 from MDP_utils import PolicyIterator
 from MDP_plot import plot_results
 from MDP_utils import DeterministicPolicy
@@ -150,31 +150,6 @@ def main(args):
     with open(config_path, 'r') as file:
         specs = yaml.safe_load(file)
 
-    # Test
-    if False:
-        beta = -0.5
-        alpha = 3
-
-        for a in [1, 2, 3]:
-            value = 0
-            for i in [1, 2, 3, 4]:
-                value += a * np.exp(-1 + beta * a + alpha * (a < i))
-
-            print(value)
-
-        print("\n")
-
-        value = 0
-        for i in [1, 2, 3, 4, 5]:
-            a = i - 1
-            if a == 0:
-                a = 1
-            value += a * np.exp(-1 + beta * a + alpha * (a < i))
-
-        print(value)
-
-        sys.exit()
-
     # All observed variables
     observed_vars = [var for var in specs["variables"].keys()] # if var[0] != "U"]
 
@@ -184,10 +159,6 @@ def main(args):
     #     observed_vars=observed_vars)
 
     # print(df.head(50))
-    # # print(np.mean(df["L1"]))
-
-    # # sns.histplot(data=df, x="R", hue="A")
-    # # plt.show()
 
     # sys.exit()
 
@@ -214,108 +185,6 @@ def main(args):
         with open(data_path, 'wb') as file:
             pickle.dump(episodes, file)
 
-    if False:
-        # Plot distribution
-        df = pd.concat(episodes, axis=0)
-
-        df = pd.concat(
-            [
-                df.shift(4).rename(columns={c: c + f"_{4}" for c in df.columns}),
-                df.shift(3).rename(columns={c: c + f"_{3}" for c in df.columns}),
-                df.shift(2).rename(columns={c: c + f"_{2}" for c in df.columns}),
-                df.shift(1).rename(columns={c: c + f"_{1}" for c in df.columns}),
-                df
-            ],
-            axis=1)
-
-        df = df.dropna()
-
-        for a in specs['variables']['A2']['domain']:
-            print(np.mean(df[df['A2_1'] == a]['L2']))
-
-        print("\n")
-
-        for a in specs['variables']['A2']['domain']:
-            print(np.mean(df[df['A2_1'] == a]['R']))
-
-        sns.histplot(data=df, x="L2")
-        plt.show()
-
-        sys.exit()
-
-
-        # df = df[(df["A1_2"] == 2) & (df["L1_2"] == 0) & (df["X_2"] == -1) & (df["A1_1"] == 1) & (df["A2_1"] == 1)]
-        print(df[['A1_3', 'A1_1', 'L1', 'R']].head(20))
-
-        print("A1_2 - L2") # immediate reward
-        for a in specs['variables']['A2']['domain']:
-            print(np.mean(df[df['A2_1'] == a]['L2']))
-
-        print("\n")
-
-        print("A1_2 - R") # immediate reward
-        for i, a in enumerate(specs['variables']['A2']['domain']):
-            print(np.mean(df[df['A2_1'] == a]['R']))
-
-        sns.histplot(data=df, x="L2")
-        plt.show()
-
-        sys.exit()
-
-        print("A1_1 - L1") # immediate reward
-        for a in specs['variables']['A1']['domain']:
-            print(np.mean(df[df['A1_1'] == a]['L1']))
-
-        print("\n")
-
-        print("A1_1 - R") # immediate reward
-        for i, a in enumerate(specs['variables']['A1']['domain']):
-            print(np.mean(df[df['A1_1'] == a]['R']))
-
-        sns.histplot(data=df, x="L1")
-        plt.show()
-
-        sys.exit()
-        print("\n")
-
-        print("A1_3 - R") # immediate reward
-        for a in specs['variables']['A1']['domain']:
-            print(np.mean(df[df['A1_3'] == a]['R']))
-
-        sys.exit()
-
-        print("A1_3 - L1_2")
-        for a in specs['variables']['A1']['domain']:
-            print(np.mean(df[df['A1_3'] == a]['L1_2']))
-
-        print("\n")
-
-        print("L1_2 - L2")
-        for l in specs['variables']['L1']['domain']:
-            print(np.mean(df[df['L1_2'] == l]['L2']))
-
-        print("\n")
-
-        print("A1_3 - L2")
-        for a in specs['variables']['A1']['domain']:
-            print(np.mean(df[df['A1_3'] == a]['L2']))
-
-        print("\n")
-
-        print("L2 - R")
-        for l in specs['variables']['L2']['domain']:
-            print(np.mean(df[df['L2'] == l]['R']))
-
-        print("\n")
-
-        print("A1_3 - R")
-        for a in specs['variables']['A1']['domain']:
-            print(np.mean(df[df['A1_3'] == a]['R']))
-
-
-
-        sys.exit()
-
     # State policy iteration
     policy_iterator = PolicyIterator(
         episodes,
@@ -324,37 +193,11 @@ def main(args):
         specs["reward"],
         specs['variables'])
 
-    # # Regression analysis for A2 policy
-    # print(policy_iterator.data_lagged.head())
-
-    # mean_y = policy_iterator\
-    #     .data_lagged\
-    #     .groupby(['A1_2', 'L1_1'])['D_2'].mean().unstack()
-
-    # # Plot the heatmap
-    # plt.figure(figsize=(10, 8))
-    # sns.heatmap(mean_y, annot=True, cmap="viridis")
-    # plt.xlabel("A1_2")
-    # plt.ylabel("L1_1")
-    # plt.show()
-
-    # D_2 is almost certaintly 1 when:
-    # 1) A1_2>=2 & L1_1 > 0 (simple!)
-
     iter_policy = policy_iterator.policy_iteration()
     print(f"{iter_policy.head(50)=}")
 
     iter_specs = modify_specs(specs, "state", iter_policy)
     # print(iter_specs['variables']["A"])
-
-    # df = sim_dataframe(
-    #     specs=iter_specs,
-    #     steps=args.episode_length,
-    #     observed_vars=observed_vars)
-
-    # print(df["A"])
-
-    # sys.exit()
 
     # Sim. data
     iter_episodes = Parallel(n_jobs=-1)(
