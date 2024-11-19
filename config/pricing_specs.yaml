@@ -69,6 +69,7 @@ variables:
             1: ["A1", "A1", "D"]
     dependencies:
       1: ["D", "A1", "U1"]
+      2: ["A2"]
     level_offset: 0
   L2:
     kernel:
@@ -80,11 +81,16 @@ variables:
       noise:
         type: "random"
         prob: 0.15
+      indicator_terms:
+        - type: "greater_than_variable"
+          variable:
+            1: ["A2"]
+          threshold:
+            2: ["A2"]
+          intercept: 0 # 2. Dyn. Back-door parameter
+          terms: null
       intercept: 1
       terms:
-        - param: 0 # 2. Dyn. Back-door parameter
-          variables:
-            2: ["A2"]
         - param: -0.65
           variables:
             1: ["A2", "A2"]
@@ -101,6 +107,9 @@ variables:
       type: "linear"
       sample_domain: [0]
       lower_bound: 0
+      noise:
+        type: "random"
+        prob: 0.15
       terms:
         - param: 1
           variables:
@@ -117,15 +126,15 @@ variables:
   A1:
     kernel:
       type: "mixed"
+      noise:
+        type: "random"
+        prob: 0.15
       mixed_probs: [1, 0] # 3. Confounding parameter.
       kernels:
         - type: "linear"
           sample_domain: [1, 2, 3]
           lower_bound: 1
           upper_bound: 3
-          noise:
-            type: "random"
-            prob: 0.15
           indicator_terms:
             - type: "multiple"
               indicators:
@@ -148,9 +157,6 @@ variables:
           sample_domain: [1, 2, 3]
           lower_bound: 1
           upper_bound: 3
-          noise:
-            type: "random"
-            prob: 0.15
           intercept: -1
           terms:
             - param: 1
@@ -168,7 +174,7 @@ variables:
       upper_bound: 3
       noise:
         type: "random"
-        prob: 0.1
+        prob: 0.15
       indicator_terms:
         - type: "multiple"
           indicators:

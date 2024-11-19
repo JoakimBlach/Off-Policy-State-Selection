@@ -1,3 +1,4 @@
+
 import sys
 import copy
 import itertools
@@ -173,6 +174,8 @@ class PolicyIterator:
         prob_check = ~np.isclose(prob_df['probability_sum'], 1.0, atol=1e-3)
         if sum(prob_check) != 0:
             raise ValueError(f"No coverage for {sum(prob_check)} observations. \n {prob_df[prob_check]}")
+        else:
+            print("... prob matrix ok! \n")
 
         prob_df = prob_df[['probability']]
 
@@ -219,7 +222,6 @@ class PolicyIterator:
         self.prob_df = self.get_prob_matrix()
 
         print(f"Policy Iteration")
-        print("\n")
 
         # If state is empty
         if not self.state_names:
@@ -260,7 +262,6 @@ class PolicyIterator:
             print(f"    Policy Improvement")
             policy, policy_stable = self.policy_improvement(v, policy, gamma)
             # print(f"        {policy=}")
-            print("\n")
 
             if policy_stable:
                 print("... converged!")

@@ -162,28 +162,45 @@ def main(args):
 
     # sys.exit()
 
-    # Check if output exists
-    output_path = os.path.join("output", args.file_name) + ".pkl"
-    print(f"checking for {output_path}")
-    if os.path.isfile(output_path):
-        print(f"Output file {output_path} already exists.")
-        return
+    # Retrieving data
+    episodes = []
 
-    # Check if data exists
     data_path = os.path.join("data", args.file_name) + ".pkl"
-    print(f"checking for {data_path}")
-    if os.path.isfile(data_path) and not args.replace_data:
-        print(f"Loading file: {data_path}")
+    if os.path.isfile(data_path):
+        print(f"Data file {data_path} already exists.")
         with open(data_path, 'rb') as file:
-            episodes = pickle.load(file)
-    else:
-        episodes = Parallel(n_jobs=-1)(
-            delayed(sim_dataframe)(specs=specs, steps=args.episode_length, observed_vars=observed_vars) 
-            for i in tqdm(range(args.num_episodes))
+            episodes += pickle.load(file)
+        print(f"Loaded file with {len(episodes)} episodes.")
+    if (not os.path.isfile(data_path)) or (args.append_data == "True"):
+        print(f"Simulating data.")
+        episodes += Parallel(n_jobs=-1)(
+            delayed(sim_dataframe)(
+                specs=specs,
+                steps=args.episode_length,
+                observed_vars=observed_vars)
+            for _ in tqdm(range(args.num_episodes))
         )
 
+        print(f"Saving data.")
         with open(data_path, 'wb') as file:
             pickle.dump(episodes, file)
+
+    # df = pd.concat(episodes, axis=0)
+
+    # # print(df["R"].unique())
+
+    # # sys.exit()
+
+    # # Plot histograms for all variables
+    # df.hist(bins=10, figsize=(10, 5), layout=(1, len(df.columns)), edgecolor='black')
+
+    # # Show the plot
+    # plt.tight_layout()
+    # plt.show()
+
+    # print(df.head(5))
+
+    # sys.exit()
 
     # State policy iteration
     policy_iterator = PolicyIterator(
@@ -192,6 +209,20 @@ def main(args):
         specs["action"],
         specs["reward"],
         specs['variables'])
+
+
+    df = policy_iterator.data_lagged
+
+    print(df.head())
+    print(df.loc[
+        (df.DE_2 == 0) & 
+        (df.A1_2 == 1) & 
+        (df.DE_1 == 0) & 
+        (df.L1_1 == 0) & 
+        (df.A1_1 == 2) & 
+        (df.A2_1 == 1), :].head())
+
+    # sys.exit()
 
     iter_policy = policy_iterator.policy_iteration()
     print(f"{iter_policy.head(50)=}")
@@ -245,7 +276,7 @@ if __name__ == '__main__':
     parser.add_argument('-ne', '--num_eval_episodes', default=1000, type=int)
     parser.add_argument('-T', '--episode_length', default=1000, type=int)
     parser.add_argument('-fn', '--file_name', default="some_file", type=str)
-    parser.add_argument('-r', '--replace_data', default=False, type=bool)
+    parser.add_argument('-r', '--append_data', choices=["True", "False"], default="True")
     parser.add_argument('-p', '--plot', choices=["True", "False"], default="True")
     parser.add_argument('-s', '--save_results', choices=["True", "False"], default="True")
 

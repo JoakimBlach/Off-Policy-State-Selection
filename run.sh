@@ -15,9 +15,9 @@ num_episodes=100000
 ## 1. Run pricing specs
 # python3 run.py --num_episodes=${num_episodes} --num_eval_episodes=1000 --episode_length=${episode_length} --file_name="pricing_specs" --save_results="True" --plot="False"
 
-# 2. No-Markov
-# alpha_values=(0 0.1 0.25 0.5 0.75 0.9)
-alpha_values=(0 0.1 0.5 0.9)
+# # 2. No-Markov
+# # alpha_values=(0 0.1 0.25 0.5 0.75 0.9)
+# alpha_values=(0 0.1 0.5 0.9)
 
 # for alpha in "${alpha_values[@]}"; do
 #     prob=$(echo "scale=2; 1 - ${alpha}" | bc)  # scale=2 ensures 2 decimal places for better precision
@@ -30,29 +30,29 @@ alpha_values=(0 0.1 0.5 0.9)
 
 #     echo "... running setting ${alpha}"
 
-#     python3 run.py --num_episodes=${num_episodes} --num_eval_episodes=10000 --episode_length=${episode_length} --file_name="pricing_no_markov_${alpha}" --save_results="True" --plot="False"
+#     # python3 run.py --num_episodes=${num_episodes} --num_eval_episodes=10000 --episode_length=${episode_length} --file_name="pricing_no_markov_${alpha}" --save_results="True" --plot="False"
 
 #     echo "... done with ${alpha}"
 # done
 
 # 3. Dyn. back-door
-alpha_values=(0 0.1 0.5 1)
+alpha_values=(0 1 2 4)
 
 for alpha in "${alpha_values[@]}"; do
 
     if [ $alpha == 0 ]; then
-        yq eval "( .variables.L2.kernel.terms[0].param) = ${alpha} |
+        yq eval "( .variables.L2.kernel.indicator_terms[0].intercept) = ${alpha} |
                  ( .variables.A2.kernel.terms[0].param) = 0 | 
                  . + {\"correct_state\": {1: [\"DE\", \"L1\"], 2: [\"DE\", \"A1\", \"A2\"]}}" \
             config/pricing_specs.yaml > "config/pricing_dyn_back_door_${alpha}.yaml"
     else
-        yq eval "( .variables.L2.kernel.terms[0].param) = ${alpha} |
+        yq eval "( .variables.L2.kernel.indicator_terms[0].intercept) = ${alpha} |
                  ( .variables.A2.kernel.terms[0].param) = 1 |
                  . + {\"correct_state\": {1: [\"DE\", \"L1\"], 2: [\"DE\", \"A1\", \"A2\"]}}" \
             config/pricing_specs.yaml > "config/pricing_dyn_back_door_${alpha}.yaml"
     fi
 
-    python3 run.py --num_episodes=${num_episodes} --num_eval_episodes=5000 --episode_length=${episode_length} --file_name="pricing_dyn_back_door_${alpha}" --save_results="True" --plot="False"
+    # python3 run.py --num_episodes=${num_episodes} --num_eval_episodes=5000 --episode_length=${episode_length} --file_name="pricing_dyn_back_door_${alpha}" --save_results="True" --plot="False" --append_data="True"
 
 done
 
@@ -70,6 +70,6 @@ done
 #              ( .variables.A1.kernel.mixed_probs) = [${prob1}, ${prob2}]" \
 #         config/pricing_specs.yaml > "config/pricing_confounded_${alpha}.yaml"
 
-#     python3 run.py --num_episodes=${num_episodes} --num_eval_episodes=5000 --episode_length=${episode_length} --file_name="pricing_confounded_${alpha}" --save_results="True" --plot="False"
+#     # python3 run.py --num_episodes=${num_episodes} --num_eval_episodes=5000 --episode_length=${episode_length} --file_name="pricing_confounded_${alpha}" --save_results="True" --plot="False"
 
 # done
