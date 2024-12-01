@@ -5,6 +5,7 @@ from matplotlib.pyplot import cm
 
 # Plot
 def plot_results(res):
+    print("Plotting results")
     # plt.rcParams['text.usetex'] = True
     colors = ["cornflowerblue", "olive", "orange"]
 
@@ -24,6 +25,7 @@ def plot_results(res):
             continue
         for data in r[0]:
             rewards.append(data["R"])
+
         cum_sum_rewards = np.cumsum(np.dstack(rewards)[0], axis=0)
 
         # Mean rewards

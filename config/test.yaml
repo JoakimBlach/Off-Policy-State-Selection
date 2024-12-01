@@ -1,5 +1,0 @@
-variables:
-  L1:
-    kernel:
-      indicator_terms:
-        - intercept: 3.0

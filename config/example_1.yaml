@@ -1,51 +1,47 @@
-state: 
-  1: ["X", "R"]
-action: 
-  1: ["A"]
-reward: 
-  0: ["R"]
-variables:
-  X:
-    kernel: 
-      type: "linear"
-      noise: 
-        type: "random"
-        prob: 0.2
-      sample_domain: [0, 1]
-      terms:
-        - param: 1
-          variables:
-            0: ["R"]
-            1: ["A", "X"]
-    dependencies:
-      0: ["R"]
-      1: ["A", "X"]
-    level_offset: 0
-  A:
-    kernel: 
-      type: "linear"
-      noise: 
-        type: "random"
-        prob: 0.2
-      sample_domain: [0, 1]
-      terms:
-        - param: 1
-          variables:
-            0: ["X", "R"]
-    dependencies:
-      0: ["X", "R"]
-    level_offset: 0.1
-  R:
-    kernel: 
-      type: "linear"
-      noise: 
-        type: "random"
-        prob: 0.2
-      sample_domain: [0, 1]
-      terms:
-        - param: 1
-          variables:
-            1: ["A", "X"]
-    dependencies:
-      1: ["A", "X"]
-    level_offset: 0
+X:
+  kernel: 
+    type: "linear"
+    noise: 0.2
+    sample_domain: [0, 1]
+    lower_bound: 0
+    upper_bound: 1
+    terms:
+      - intercept: 0
+        indicators: null
+        value: 1
+        variables:
+          0: ["R"]
+          1: ["A", "X"]
+  dependencies:
+    0: ["R"]
+    1: ["A", "X"]
+A:
+  kernel: 
+    type: "linear"
+    noise: 0.2
+    sample_domain: [0, 1]
+    lower_bound: 0
+    upper_bound: 1
+    terms:
+      - intercept: 0
+        indicators: null
+        value: 1
+        variables:
+          0: ["X", "R"]
+  dependencies:
+    0: ["X", "R"]
+R:
+  kernel: 
+    type: "linear"
+    noise: 0.2
+    sample_domain: [0, 1]
+    lower_bound: 0
+    upper_bound: 1
+    terms:
+      - intercept: 0
+        indicators: null
+        value: 1
+        variables:
+          1: ["A", "X"]
+  dependencies:
+    1: ["A", "X"]

@@ -41,10 +41,22 @@ def get_variable_names(name_dict):
     return names
 
 class PolicyIterator:
-    def __init__(self, data, state, action, reward, specs):
-        # Set specs
-        self.specs = specs
+    def __init__(self, data, state, action, reward):
+        
+        # Set names
+        self.set_mdp_names(state, action, reward)
 
+        # Get lagged dataframe
+        check_names = self.next_state_names + self.state_names + self.action_names
+        print(f"{check_names=}")
+
+        self.data_lagged = self.get_lagged_dataframe(data, check_names)
+        
+        print(self.data_lagged.head(3))
+        print("... done")
+        print("\n")
+
+    def set_mdp_names(self, state, action, reward):
         # Create state and action columns
         self.state_names = get_variable_names(state)
         self.action_names = get_variable_names(action)
@@ -70,15 +82,6 @@ class PolicyIterator:
         self.reward_in_state = "R" in [i[0:1] for i in self.state_names]
         if self.reward_in_state:
             self.reward_idx = np.max([i for i in range(len(self.state_names)) if self.state_names[i][0:1] == "R"]).item()
-
-        # Get lagged dataframe
-        check_names = self.next_state_names + self.state_names + self.action_names
-        print(f"{check_names=}")
-        self.data_lagged = self.get_lagged_dataframe(data, check_names)
-        
-        print(self.data_lagged.head(3))
-        print("... done")
-        print("\n")
 
     def get_prob_matrix(self):
         print("... computing prob df")
@@ -163,17 +166,24 @@ class PolicyIterator:
         # TODO: Delete to be sure about results! 
 
         # Calculate total counts for each state-action pair
-        prob_df["total_count"] = prob_df.groupby(level=state_action_columns)["count"].transform("sum")
+        prob_df["total_count"] = prob_df\
+            .groupby(level=state_action_columns)["count"]\
+            .transform("sum")
 
         # Calculate probabilities
         prob_df['probability'] = (prob_df['count'] / prob_df['total_count'])
 
         # Check probabilities
-        prob_df['probability_sum'] = prob_df.groupby(state_action_columns)['probability'].transform('sum')
+        prob_df['probability_sum'] = prob_df \
+            .groupby(state_action_columns)['probability'] \
+            .transform('sum')
 
         prob_check = ~np.isclose(prob_df['probability_sum'], 1.0, atol=1e-3)
         if sum(prob_check) != 0:
-            raise ValueError(f"No coverage for {sum(prob_check)} observations. \n {prob_df[prob_check]}")
+            missing_state_actions = prob_df[prob_check]\
+                .reset_index()[self.prob_df_state_names + self.prob_df_action_names]\
+                .drop_duplicates()
+            raise ValueError(f"No coverage for state-action combinations: \n {missing_state_actions} \n Total: {missing_state_actions.shape[0]}")
         else:
             print("... prob matrix ok! \n")
 
@@ -183,37 +193,45 @@ class PolicyIterator:
 
     def get_lagged_dataframe(self, episodes, check_names):
         print(f"... lagging data...")
-        transitions = []
-        for episode in episodes:
+        transitions = pd.concat(
+            episodes,
+            keys=[i for i in range(len(episodes))],
+            names=['episode'])\
+            .reset_index('episode')
 
-            episode_lagged = episode.copy()
+        print('... concatenated...')
+        lagged_dataframe = transitions \
+            .copy() \
+            .drop('episode', axis=1) \
+            .reset_index(drop=True)
 
-            lag = 1
-            while True:
-                col_missing = False
-                for col in check_names:
-                    if col not in episode_lagged.columns:
-                        col_missing = True
-                        break
-
-                if col_missing:
-                    episode_lag = episode \
-                        .shift(lag) \
-                        .rename(columns={c: c + f"_{lag}" for c in episode.columns})
-
-                    episode_lagged = pd.concat(
-                        [episode_lag, episode_lagged],
-                        axis=1) \
-                    .dropna()
-
-                    lag += 1
-
-                if not col_missing:
+        lag = 1
+        while True:
+            print(f"    Lag {lag}")
+            col_missing = False
+            for col in check_names:
+                if col not in lagged_dataframe.columns:
+                    col_missing = True
                     break
 
-            transitions.append(episode_lagged)
+            if col_missing:
+                transitions_lagged = transitions \
+                    .groupby('episode') \
+                    .shift(lag) \
+                    .rename(columns={c: c + f"_{lag}" for c in transitions.columns}) \
+                    .reset_index(drop=True)
 
-        return pd.concat(transitions)
+                lagged_dataframe = pd.concat(
+                    [transitions_lagged, lagged_dataframe],
+                    axis=1) \
+                    .dropna()
+
+                lag += 1
+
+            if not col_missing:
+                break
+
+        return lagged_dataframe
 
     # Policy iteration
     def policy_iteration(self, gamma=0.95):

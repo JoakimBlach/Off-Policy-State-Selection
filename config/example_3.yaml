@@ -1,99 +1,102 @@
-state: 
-  1: ["M", "X"]
-correct_state: 
-  1: ["X"]
-action: 
-  1: ["A"]
-reward: 
-  0: ["R"]
-variables:
-  U1:
-    kernel:
-      type: "uniform"
-      domain: [0, 1]
-      probs: [0.2, 0.8]
-      terms: null
-    dependencies: null
-    level_offset: 0
-  U2:
-    kernel:
-      type: "uniform"
-      domain: [0, 1]
-      terms: null
-    dependencies: null
-    level_offset: 0
-  M:
-    kernel:
-      type: "linear"
-      sample_domain: [0, 1, 2]
-      noise: 
-        type: "random"
-        prob: 0.1
-      terms:
-        - param: 1
-          variables:
-            0: ["U1"]
-        - param: 1
-          variables:
-            0: ["U2"]
-    dependencies:
-      0: ["U1", "U2"]
-    level_offset: 0
-  X:
-    kernel:
-      type: "binomial"
-      dim: 2
-      noise:
-        type: "random"
-        prob: 0.5
-      terms:
-        - param: 0.1
-          variables:
-            0: ["M"]
-        - param: 0.1
-          variables:
-            1: ["X"]
-        - param: 0.1
-          variables:
-            1: ["A"]
-    dependencies:
-      0: ["M"]
-      1: ["X", "A"]
-    level_offset: 0
-  A:
-    kernel:
-      type: "linear"
-      sample_domain: [0, 0.1, 1, 1.1]
-      noise:
-        type: "random"
-        prob: 0.1
-      terms:
-        - param: 1
-          variables:
-            0: ["U1"]
-        - param: 0.1
-          variables:
-            0: ["X"]
-    dependencies:
-      0: ["U1", "X"]
-    level_offset: 0.1
-  R:
-    kernel: 
-      type: "linear"
-      sample_domain: [0, 0.1, 0.2, 1, 1.1, 1.2]
-      noise:
-        type: "random"
-        prob: 0.1
-      terms:
-        - param: 0.1
-          variables:
-            1: ["X"]
-        - param: 0.1
-          variables:
-            1: ["A"]
-        - param: 1
-          variables:
-            1: ["U2"]
-    dependencies:
-      1: ["X", "A", "U2"]
-    level_offset: 0
+U1:
+  kernel:
+    type: "uniform"
+    sample_domain: [0, 1]
+    probs: [0.2, 0.8]
+    terms: null
+  dependencies: null
+U2:
+  kernel:
+    type: "uniform"
+    sample_domain: [0, 1]
+    terms: null
+  dependencies: null
+M:
+  kernel:
+    type: "linear"
+    sample_domain: [0, 1, 2]
+    lower_bound: 0
+    upper_bound: 2
+    noise: 0.1
+    terms:
+      - intercept: 0
+        indicators: null
+        value: 1
+        variables:
+          0: ["U1"]
+      - intercept: 0
+        indicators: null
+        value: 1
+        variables:
+          0: ["U2"]
+  dependencies:
+    0: ["U1", "U2"]
+X:
+  kernel:
+    type: "binomial"
+    dim: 2
+    noise: 0.5
+    terms:
+      - intercept: 0
+        indicators: null
+        value: 0.1
+        variables:
+          0: ["M"]
+      - intercept: 0
+        indicators: null
+        value: 0.1
+        variables:
+          1: ["X"]
+      - intercept: 0
+        indicators: null
+        value: 0.1
+        variables:
+          1: ["A"]
+  dependencies:
+    0: ["M"]
+    1: ["X", "A"]
+A:
+  kernel:
+    type: "linear"
+    sample_domain: [0, 0.1, 0.2, 1, 1.1]
+    lower_bound: 0
+    upper_bound: 1.1
+    noise: 0.1
+    terms:
+      - intercept: 0
+        indicators: null
+        value: 1
+        variables:
+          0: ["U1"]
+      - intercept: 0
+        indicators: null
+        value: 0.1
+        variables:
+          0: ["X"]
+  dependencies:
+    0: ["U1", "X"]
+R:
+  kernel: 
+    type: "linear"
+    sample_domain: [0, 0.1, 0.2, 1, 1.1, 1.2]
+    lower_bound: 0
+    upper_bound: 1.2
+    noise: 0.1
+    terms:
+      - intercept: 0
+        indicators: null
+        value: 0.1
+        variables:
+          1: ["X"]
+      - intercept: 0
+        indicators: null
+        value: 0.1
+        variables:
+          1: ["A"]
+      - intercept: 0
+        indicators: null
+        value: 1
+        variables:
+          1: ["U2"]
+  dependencies:
+    1: ["X", "A", "U2"]

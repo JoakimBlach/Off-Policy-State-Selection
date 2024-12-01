@@ -4,11 +4,11 @@ import matplotlib.pyplot as plt
 
 font = {'fontname':'Helvetica'}
 
-files = ["output/example1_specs.pkl", "output/example2_specs.pkl", "output/example3_specs.pkl", "output/example4_specs.pkl"]
+files = ["output/example_2.pkl", "output/example_4.pkl", "output/example_3.pkl"]
 titles = ["(a)", "(b)", "(c)", "(d)"]
 # files = ["output/pricing_confounded_specs_output.pkl"]
 
-fig, ax = plt.subplots(1, len(files), figsize=(12, 3))
+fig, ax = plt.subplots(1, len(files), figsize=(10, 3))
 
 for k, filename in enumerate(files):
     with open(filename, 'rb') as file:
@@ -71,6 +71,15 @@ for k, filename in enumerate(files):
     # ax[k].set_ylabel("Cumulative Reward")
     # ax[k].set_xlabel("Time")
     # ax[k].legend(loc = "upper right")
+
+# plt.rcParams.update({
+#     "text.usetex": True,
+#     "font.family": "sans-serif",
+#     "font.sans-serif": "Helvetica",
+# })
+
+# plt.rcParams['text.usetex'] = True
+# plt.rcParams['text.latex.preamble'] = [r'\usepackage{lmodern}']
 
 fig.text(0, 0.5, "Cumulative Reward", va='center', rotation='vertical', **font)
 fig.text(0.5, 0.02, "Time", va='center', **font)

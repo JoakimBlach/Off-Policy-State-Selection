@@ -21,13 +21,13 @@ from matplotlib.pyplot import cm
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import graph_simulator
 import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 from joblib import Parallel, delayed
 from scipy import optimize
 from scipy.integrate import quad
-from graph_simulator import DAG_Simulator
 from MDP_utils import PolicyIterator
 from MDP_plot import plot_results
 from MDP_utils import DeterministicPolicy
@@ -55,86 +55,105 @@ def compute_mean(episodes, gamma):
 
     return np.sum(np.mean(disc_rewards, axis=1))
 
-def modify_specs(specs, state_key, policy):
+def modify_specs(state_specs, dag_specs, state_key, policy):
 
-    new_specs = copy.deepcopy(specs)
+    new_dag_specs = copy.deepcopy(dag_specs)
 
-    if specs[state_key] is None:
+    if state_specs[state_key] is None:
         # for j, (action_name, action_dom) in enumerate(zip(action_names, action_var_domains)):
         for action_name in policy.columns:
             action_var_name = action_name.split("_")[0]
 
-            new_specs['variables'][action_var_name] = {
+            new_dag_specs[action_var_name] = {
                 'kernel': {
                     'type': 'constant',
+                    'noise': 0,
                     'value': policy.loc[0, action_name].item(),
                     'terms': None
                 },
-                'dependencies': None,
-                'level_offset': 0.1}
+                'dependencies': None}
 
-        return new_specs
+        return new_dag_specs
 
     # Create proper lag from action perspective
     action_lags = []
-    for lag in list(specs["action"].keys())[::-1]:
+    for lag in list(state_specs["action"].keys())[::-1]:
         action_lags.append(lag)
     action_lag = max(action_lags)
     
     # subtract action-lag from state in specs
     # TODO: This might be buggy!
     state_spec = {}
-    for lag in list(specs[state_key].keys())[::-1]:
-        state_spec[lag - action_lag] = specs[state_key][lag]
+    for lag in list(state_specs[state_key].keys())[::-1]:
+        state_spec[lag - action_lag] = state_specs[state_key][lag]
 
     # Set policy
-    for j, action_name in enumerate(policy.columns):
+    for _, action_name in enumerate(policy.columns):
         action_var_name = action_name.split("_")[0]
         action_domain = policy[action_name].unique().tolist()
+        sample_domain = dag_specs[action_var_name]['kernel']['sample_domain']
 
         # Type
-        new_specs['variables'][action_var_name] = {
+        new_dag_specs[action_var_name] = {
             'kernel': {
-                'type': 'deterministic',
-                'domain': action_domain,
-                'terms': [
-                    {
-                        'param': 1,
-                        'variables': state_spec
-                    }
-                ],
+                'type': 'linear',
+                'noise': 0,
+                'lower_bound': min(sample_domain),
+                'upper_bound': max(sample_domain),
+                'sample_domain': sample_domain,
+                'terms': [],
             },
-            'dependencies':state_spec,
-            'level_offset': 0.1}    
+            'dependencies':state_spec}
+
 
         # Fill out tree
-        new_specs['variables'][action_var_name]["kernel"]["tree"] = []
-
         for state in policy.index.drop_duplicates():
 
-            input_ = {"output": policy.loc[state, action_name].item()}
+            term = {}
+            term['value'] = 0
+            term['variables'] = None
+
+            # Get output
+            term['intercept'] = policy.loc[state, action_name].item()
+
+            # Construct indicators
+            term['indicators'] = []
 
             k = 0
             for lag in sorted(list(state_spec.keys()), reverse=True):
-                input_[lag] = {}
+                # input_[lag] = {}
                 for name in state_spec[lag]:
                     if isinstance(state, tuple):
-                        input_[lag][name] = state[k]
+                        # input_[lag][name] = state[k]
+                        term['indicators'].append(
+                            {
+                                "type": "equal_to",
+                                "variable": {lag: name},
+                                "threshold": state[k]
+
+                            }
+                        )
                     else:
-                        input_[lag][name] = state
+                        # input_[lag][name] = state
+                        term['indicators'].append(
+                            {
+                                "type": "equal_to",
+                                "variable": {lag: name},
+                                "threshold": state
+
+                            }
+                        )
                     k += 1
 
-            new_specs['variables'][action_var_name]["kernel"]["tree"].append(input_)
+            new_dag_specs[action_var_name]['kernel']["terms"].append(term)
 
-    return new_specs
+    return new_dag_specs
 
 # @timeit
-def sim_dataframe(specs, steps, observed_vars):
-    simulator = DAG_Simulator(specs["variables"])
+def sim_dataframe(config_path, steps):
+    simulator = graph_simulator.DagSimulator(config_path)
 
-    df = pd.DataFrame(
-        simulator.run(steps=steps),
-        columns = observed_vars)
+    df = pd.DataFrame(simulator.run(steps=steps))
 
     return df
 
@@ -144,21 +163,20 @@ def save_experiment(res, output_path):
         pickle.dump(res, file)
 
 def main(args):
-    # Load specs
+    # Load configs
     config_path = os.path.join("config", args.file_name) + ".yaml"
-    print(f"Loading config file: {config_path}")
     with open(config_path, 'r') as file:
-        specs = yaml.safe_load(file)
+        dag_specs = yaml.safe_load(file)
 
-    # All observed variables
-    observed_vars = [var for var in specs["variables"].keys()] # if var[0] != "U"]
+    with open("config/states.yaml", 'r') as file:
+        all_state_specs = yaml.safe_load(file)
+    state_specs = all_state_specs[args.state_specs]
 
-    # df = sim_dataframe(
-    #     specs=specs,
-    #     steps=args.episode_length,
-    #     observed_vars=observed_vars)
+    # import time
+    # start_time = time.time()
+    # df = sim_dataframe(config_path, args.episode_length)
 
-    # print(df.head(50))
+    # print(time.time() - start_time)
 
     # sys.exit()
 
@@ -174,10 +192,7 @@ def main(args):
     if (not os.path.isfile(data_path)) or (args.append_data == "True"):
         print(f"Simulating data.")
         episodes += Parallel(n_jobs=-1)(
-            delayed(sim_dataframe)(
-                specs=specs,
-                steps=args.episode_length,
-                observed_vars=observed_vars)
+            delayed(sim_dataframe)(config_path, args.episode_length)
             for _ in tqdm(range(args.num_episodes))
         )
 
@@ -186,10 +201,8 @@ def main(args):
             pickle.dump(episodes, file)
 
     # df = pd.concat(episodes, axis=0)
-
-    # # print(df["R"].unique())
-
-    # # sys.exit()
+    # print(df.tail(20))
+    # sys.exit()
 
     # # Plot histograms for all variables
     # df.hist(bins=10, figsize=(10, 5), layout=(1, len(df.columns)), edgecolor='black')
@@ -205,52 +218,40 @@ def main(args):
     # State policy iteration
     policy_iterator = PolicyIterator(
         episodes,
-        specs["state"],
-        specs["action"],
-        specs["reward"],
-        specs['variables'])
-
-
-    df = policy_iterator.data_lagged
-
-    print(df.head())
-    print(df.loc[
-        (df.DE_2 == 0) & 
-        (df.A1_2 == 1) & 
-        (df.DE_1 == 0) & 
-        (df.L1_1 == 0) & 
-        (df.A1_1 == 2) & 
-        (df.A2_1 == 1), :].head())
-
-    # sys.exit()
+        state_specs["state"],
+        state_specs["action"],
+        state_specs["reward"])
 
     iter_policy = policy_iterator.policy_iteration()
     print(f"{iter_policy.head(50)=}")
 
-    iter_specs = modify_specs(specs, "state", iter_policy)
-    # print(iter_specs['variables']["A"])
+    # Save iterated policy specs
+    iter_specs = modify_specs(state_specs, dag_specs, "state", iter_policy)
+    # print(iter_specs["A"]['kernel'])
+    with open('config/iterated_specs.yaml', 'w') as outfile:
+        yaml.dump(iter_specs, outfile, default_flow_style=False)
 
     # Sim. data
     iter_episodes = Parallel(n_jobs=-1)(
-        delayed(sim_dataframe)(specs=iter_specs, steps=args.episode_length, observed_vars=observed_vars)
+        delayed(sim_dataframe)('config/iterated_specs.yaml', steps=args.episode_length)
         for _ in tqdm(range(args.num_eval_episodes))
     )
 
-    if "correct_state" in specs.keys():
-        correct_state_iterator = PolicyIterator(
-            episodes,
-            specs["correct_state"],
-            specs["action"],
-            specs["reward"],
-            specs['variables'])
+    if "correct_state" in state_specs.keys():
+        policy_iterator.set_mdp_names(
+            state_specs["correct_state"],
+            state_specs["action"],
+            state_specs["reward"])
 
-        opt_policy = correct_state_iterator.policy_iteration()
+        opt_policy = policy_iterator.policy_iteration()
         print(f"{opt_policy=}")
-    
-        opt_specs = modify_specs(specs, "correct_state", opt_policy)
+
+        opt_specs = modify_specs(state_specs, dag_specs, "correct_state", opt_policy)
+        with open('config/opt_specs.yaml', 'w') as outfile:
+            yaml.dump(opt_specs, outfile, default_flow_style=False)
 
         opt_episodes = Parallel(n_jobs=-1)(
-            delayed(sim_dataframe)(specs=opt_specs, steps=args.episode_length, observed_vars=observed_vars)
+            delayed(sim_dataframe)('config/opt_specs.yaml', args.episode_length)
             for _ in tqdm(range(args.num_eval_episodes))
         )
     else:
@@ -261,6 +262,7 @@ def main(args):
         (iter_episodes, r'$\pi^i(s)$'),
         (opt_episodes, r'$\pi^{\ast}(s)$')]
 
+    output_path = os.path.join("output", args.file_name) + ".pkl"
     if args.save_results == "True":
         save_experiment(res, output_path)
 
@@ -276,6 +278,7 @@ if __name__ == '__main__':
     parser.add_argument('-ne', '--num_eval_episodes', default=1000, type=int)
     parser.add_argument('-T', '--episode_length', default=1000, type=int)
     parser.add_argument('-fn', '--file_name', default="some_file", type=str)
+    parser.add_argument('-sp', '--state_specs', default="some_file", type=str)
     parser.add_argument('-r', '--append_data', choices=["True", "False"], default="True")
     parser.add_argument('-p', '--plot', choices=["True", "False"], default="True")
     parser.add_argument('-s', '--save_results', choices=["True", "False"], default="True")
