@@ -1,66 +1,55 @@
-U:
-  kernel: 
-    type: "uniform"
-    sample_domain: [-1, 1]
-    terms: null
-  dependencies: null
 X:
   kernel:
     type: "linear"
     noise: 0.2
-    sample_domain: [-1.1, 0.0, 1.1, 2.9]
-    lower_bound: -1.1
-    upper_bound: 2.9
+    sample_domain: [0, 1]
+    lower_bound: 0
+    upper_bound: 1
     terms:
-      - intercept: 1
+      - intercept: 2
         indicators: null
         value: -1
         variables:
-          1: ["U"]
-      - intercept: 0
-        indicators: null
-        value: 1
-        variables:
-          1: ["A", "U"]
-      - intercept: 0
-        indicators: null
-        value: 0.1
-        variables:
-          1: ["A"]
+          2: ["A"]
   dependencies:
-    1: ["A", "U"]
+    2: ["A"]
 A:
   kernel:
     type: "linear"
     noise: 0.2
-    sample_domain: [-1, 1]
-    lower_bound: -1
-    upper_bound: 1
+    sample_domain: [1, 2]
+    lower_bound: 1
+    upper_bound: 2
     terms:
-      - intercept: 0
-        indicators: null
-        value: 1
-        variables:
-          0: ["U"]
+      - intercept: 1
+        indicators:
+          - type: "greater_than_value"
+            variable:
+              0: "X"
+            threshold: 0
+          - type: "greater_or_equal_than_value"
+            variable:
+              1: "A"
+            threshold: 1
+        variables: null
   dependencies:
-    0: ["U"]
+    0: ["X"]
+    1: ["A"]
   level_offset: 0.1
 R:
   kernel: 
-    type: "binomial"
-    sample_domain: [0, 1]
-    dim: 2
+    type: "linear"
+    sample_domain: [0, 1, 2]
+    lower_bound: 0    
+    upper_bound: 2
     terms:
-      - intercept: 0
-        indicators: null
-        value: 0.1
-        variables:
-          1: ["A"]
       - intercept: 0
         indicators: null
         value: 1
         variables:
-          1: ["X"]
+          0: ["X"]
+          1: ["A"]
   dependencies:
-    1: ["A", "X"]
+    0: ["X"]
+    1: ["A"]
   level_offset: 0

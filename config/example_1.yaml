@@ -1,47 +1,67 @@
+U:
+  kernel: 
+    type: "uniform"
+    sample_domain: [-1, 1]
+    probs: [0.7, 0.3]
+    terms: null
+  dependencies: null
 X:
-  kernel: 
+  kernel:
     type: "linear"
     noise: 0.2
-    sample_domain: [0, 1]
+    sample_domain: [0, 2]
     lower_bound: 0
-    upper_bound: 1
+    upper_bound: 2
     terms:
-      - intercept: 0
+      - intercept: 1
         indicators: null
         value: 1
         variables:
-          0: ["R"]
-          1: ["A", "X"]
+          1: ["U"]
   dependencies:
-    0: ["R"]
-    1: ["A", "X"]
+    1: ["U"]
 A:
-  kernel: 
+  kernel:
     type: "linear"
     noise: 0.2
-    sample_domain: [0, 1]
-    lower_bound: 0
-    upper_bound: 1
+    sample_domain: [1, 2]
+    lower_bound: 1
+    upper_bound: 2
     terms:
-      - intercept: 0
+      - intercept: 1
+        indicators:
+          - type: "greater_than_value"
+            variable:
+              0: "X"
+            threshold: 0
+          - type: "greater_or_equal_than_value"
+            variable:
+              1: "A"
+            threshold: 1
+        variables: null
+      - intercept: 1
         indicators: null
-        value: 1
+        value: -1
         variables:
-          0: ["X", "R"]
+          0: ["U"]
   dependencies:
-    0: ["X", "R"]
+    0: ["U", "X"]
+    1: ["A"]
+  level_offset: 0.1
 R:
   kernel: 
     type: "linear"
-    noise: 0.2
-    sample_domain: [0, 1]
-    lower_bound: 0
-    upper_bound: 1
+    sample_domain: [0, 2, 4]
+    lower_bound: 0    
+    upper_bound: 4
     terms:
       - intercept: 0
         indicators: null
         value: 1
         variables:
-          1: ["A", "X"]
+          0: ["X"]
+          1: ["A"]
   dependencies:
-    1: ["A", "X"]
+    0: ["X"]
+    1: ["A"]
+  level_offset: 0

@@ -175,9 +175,10 @@ def main(args):
     # import time
     # start_time = time.time()
     # df = sim_dataframe(config_path, args.episode_length)
-
-    # print(time.time() - start_time)
-
+    # # print(df["A"].unique())
+    # # # print(time.time() - start_time)
+    # counts = pd.crosstab(index=df['A', ""], columns='A', normalize=True)
+    # # print(counts)
     # sys.exit()
 
     # Retrieving data
@@ -217,10 +218,25 @@ def main(args):
 
     # State policy iteration
     policy_iterator = PolicyIterator(
-        episodes,
+        episodes, 
         state_specs["state"],
         state_specs["action"],
         state_specs["reward"])
+
+    # counts = pd.crosstab(
+    #     index=[policy_iterator.data_lagged["A_1"], policy_iterator.data_lagged["C_1"]],
+    #     columns=policy_iterator.data_lagged["X"],
+    #     normalize="index")
+    # print(counts)
+    # sys.exit()
+
+    # sns.histplot(
+    #     data=policy_iterator.data_lagged, 
+    #     x="X_1",
+    #     hue="A_1")
+    # plt.show()
+
+    # sys.exit()
 
     iter_policy = policy_iterator.policy_iteration()
     print(f"{iter_policy.head(50)=}")
@@ -238,7 +254,8 @@ def main(args):
     )
 
     if "correct_state" in state_specs.keys():
-        policy_iterator.set_mdp_names(
+        policy_iterator = PolicyIterator(
+            episodes, 
             state_specs["correct_state"],
             state_specs["action"],
             state_specs["reward"])

@@ -1,31 +1,22 @@
 example_1:
-  state: 
-    1: ["X", "R"]
+  state: null
   action: 
     1: ["A"]
   reward: 
     0: ["R"]
 example_2:
-  state: 
-    1: ["X"]
+  state: null
+  correct_state: 
+    2: ["A"]
   action: 
     1: ["A"]
   reward: 
     0: ["R"]
 example_3:
   state: 
-    1: ["M", "X"]
-  correct_state: 
-    1: ["X"]
-  action: 
-    1: ["A"]
-  reward: 
-    0: ["R"]
-example_4:
-  state: null
-  correct_state:
-    1: ["X"]
-  action: 
+    1: ["C"]
+  correct_state: null
+  action:
     1: ["A"]
   reward: 
     0: ["R"]
