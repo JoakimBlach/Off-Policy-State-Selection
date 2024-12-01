@@ -1,0 +1,69 @@
+example_1:
+  state: 
+    1: ["X", "R"]
+  action: 
+    1: ["A"]
+  reward: 
+    0: ["R"]
+example_2:
+  state: 
+    1: ["X"]
+  action: 
+    1: ["A"]
+  reward: 
+    0: ["R"]
+example_3:
+  state: 
+    1: ["M", "X"]
+  correct_state: 
+    1: ["X"]
+  action: 
+    1: ["A"]
+  reward: 
+    0: ["R"]
+example_4:
+  state: null
+  correct_state:
+    1: ["X"]
+  action: 
+    1: ["A"]
+  reward: 
+    0: ["R"]
+pricing_specs:
+  state:
+    1: ["DE", "L1"]
+    2: ["DE", "A1"]
+  correct_state:
+    1: ["DE", "L1"]
+    2: ["DE", "A1"]
+  action:
+    1: ["A1", "A2"]
+  reward:
+    0: ["R"]
+pricing_no_markov:
+  state:
+    1: ["DE", "L1"]
+    2: ["DE", "A1"]
+  action:
+    1: ["A1", "A2"]
+  reward:
+    0: ["R"]
+pricing_dyn_back_door:
+  state:
+    1: ["DE", "L1"]
+    2: ["DE", "A1"]
+  correct_state:
+    1: ["DE", "L1"]
+    2: ["DE", "A1", "A2"]
+  action:
+    1: ["A1", "A2"]
+  reward:
+    0: ["R"]
+pricing_confounded:
+  state:
+    1: ["DE", "L1"]
+    2: ["DE", "A1"]
+  action:
+    1: ["A1", "A2"]
+  reward:
+    0: ["R"]
