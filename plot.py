@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 
 font = {'fontname':'Helvetica'}
 
-files = ["output/example_2.pkl", "output/example_4.pkl", "output/example_3.pkl"]
-titles = ["(a)", "(b)", "(c)", "(d)"]
+files = ["output/example_1.pkl", "output/example_2.pkl", "output/example_3.pkl"]
+titles = ["(a)", "(b)", "(c)"]
 # files = ["output/pricing_confounded_specs_output.pkl"]
 
 fig, ax = plt.subplots(1, len(files), figsize=(10, 3))

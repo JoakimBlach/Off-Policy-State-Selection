@@ -1,6 +1,6 @@
 
 # RUN TOY SIM
-spec_values=(1 2 3 4)
+spec_values=(1 2 3)
 
 for spec in "${spec_values[@]}"; do
     python3 run.py --num_episodes=5000 --episode_length=500 --num_eval_episodes=1000 --state_specs="example_${spec}" --file_name="example_${spec}" --save_results="True" --plot="False"
