@@ -85,6 +85,6 @@ fig.text(0, 0.5, "Cumulative Reward", va='center', rotation='vertical', **font)
 fig.text(0.5, 0.02, "Time", va='center', **font)
 
 plt.tight_layout()
-plt.savefig("pics/MDP_examples.png", bbox_inches='tight')
+plt.savefig("pics/MDP_examples.png", bbox_inches='tight', dpi=1200)
 
 plt.show()
