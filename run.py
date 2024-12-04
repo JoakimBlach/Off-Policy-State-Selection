@@ -5,141 +5,16 @@ import copy
 import pickle
 import argparse
 import numpy as np
-import matplotlib.pyplot as plt 
-
-from scipy import stats
-from scipy.special import expit
-
-sys.path.insert(0,'/Users/joakim.blach.andersen/Documents/PhD/graph_simulator')
-
-import numpy as np
 import pandas as pd
-import seaborn as sns
 import graph_simulator
 import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 from joblib import Parallel, delayed
-from MDP_utils import PolicyIterator, plot_results
+from MDP_utils import PolicyIterator, plot_results, modify_specs
 
-from functools import wraps
-import time
+sys.path.insert(0,'/Users/joakim.blach.andersen/Documents/PhD/graph_simulator')
 
-def timeit(func):
-    @wraps(func)
-    def timeit_wrapper(*args, **kwargs):
-        start_time = time.perf_counter()
-        result = func(*args, **kwargs)
-        end_time = time.perf_counter()
-        total_time = end_time - start_time
-        print(f'Function {func.__name__}{args} {kwargs} Took {total_time:.4f} seconds')
-        return result
-    return timeit_wrapper
-
-def compute_mean(episodes, gamma):
-
-    rewards = np.vstack([episode["R"] for episode in episodes]).T
-    gammas = np.array([gamma**t for t in range(rewards.shape[0])])[:, np.newaxis]
-
-    disc_rewards = gammas * rewards
-
-    return np.sum(np.mean(disc_rewards, axis=1))
-
-def modify_specs(state_specs, dag_specs, state_key, policy):
-
-    new_dag_specs = copy.deepcopy(dag_specs)
-
-    if state_specs[state_key] is None:
-        # for j, (action_name, action_dom) in enumerate(zip(action_names, action_var_domains)):
-        for action_name in policy.columns:
-            action_var_name = action_name.split("_")[0]
-
-            new_dag_specs[action_var_name] = {
-                'kernel': {
-                    'type': 'constant',
-                    'noise': 0,
-                    'value': policy.loc[0, action_name].item(),
-                    'terms': None
-                },
-                'dependencies': None}
-
-        return new_dag_specs
-
-    # Create proper lag from action perspective
-    action_lags = []
-    for lag in list(state_specs["action"].keys())[::-1]:
-        action_lags.append(lag)
-    action_lag = max(action_lags)
-    
-    # subtract action-lag from state in specs
-    # TODO: This might be buggy!
-    state_spec = {}
-    for lag in list(state_specs[state_key].keys())[::-1]:
-        state_spec[lag - action_lag] = state_specs[state_key][lag]
-
-    # Set policy
-    for _, action_name in enumerate(policy.columns):
-        action_var_name = action_name.split("_")[0]
-        action_domain = policy[action_name].unique().tolist()
-        sample_domain = dag_specs[action_var_name]['kernel']['sample_domain']
-
-        # Type
-        new_dag_specs[action_var_name] = {
-            'kernel': {
-                'type': 'linear',
-                'noise': 0,
-                'lower_bound': min(sample_domain),
-                'upper_bound': max(sample_domain),
-                'sample_domain': sample_domain,
-                'terms': [],
-            },
-            'dependencies':state_spec}
-
-
-        # Fill out tree
-        for state in policy.index.drop_duplicates():
-
-            term = {}
-            term['value'] = 0
-            term['variables'] = None
-
-            # Get output
-            term['intercept'] = policy.loc[state, action_name].item()
-
-            # Construct indicators
-            term['indicators'] = []
-
-            k = 0
-            for lag in sorted(list(state_spec.keys()), reverse=True):
-                # input_[lag] = {}
-                for name in state_spec[lag]:
-                    if isinstance(state, tuple):
-                        # input_[lag][name] = state[k]
-                        term['indicators'].append(
-                            {
-                                "type": "equal_to",
-                                "variable": {lag: name},
-                                "threshold": state[k]
-
-                            }
-                        )
-                    else:
-                        # input_[lag][name] = state
-                        term['indicators'].append(
-                            {
-                                "type": "equal_to",
-                                "variable": {lag: name},
-                                "threshold": state
-
-                            }
-                        )
-                    k += 1
-
-            new_dag_specs[action_var_name]['kernel']["terms"].append(term)
-
-    return new_dag_specs
-
-# @timeit
 def sim_dataframe(config_path, steps):
     simulator = graph_simulator.DagSimulator(config_path)
 
@@ -162,15 +37,6 @@ def main(args):
         all_state_specs = yaml.safe_load(file)
     state_specs = all_state_specs[args.state_specs]
 
-    # import time
-    # start_time = time.time()
-    # df = sim_dataframe(config_path, args.episode_length)
-    # # print(df["A"].unique())
-    # # # print(time.time() - start_time)
-    # counts = pd.crosstab(index=df['A', ""], columns='A', normalize=True)
-    # # print(counts)
-    # sys.exit()
-
     # Retrieving data
     episodes = []
 
@@ -191,21 +57,6 @@ def main(args):
         with open(data_path, 'wb') as file:
             pickle.dump(episodes, file)
 
-    # df = pd.concat(episodes, axis=0)
-    # print(df.tail(20))
-    # sys.exit()
-
-    # # Plot histograms for all variables
-    # df.hist(bins=10, figsize=(10, 5), layout=(1, len(df.columns)), edgecolor='black')
-
-    # # Show the plot
-    # plt.tight_layout()
-    # plt.show()
-
-    # print(df.head(5))
-
-    # sys.exit()
-
     # State policy iteration
     policy_iterator = PolicyIterator(
         episodes, 
@@ -213,27 +64,11 @@ def main(args):
         state_specs["action"],
         state_specs["reward"])
 
-    # counts = pd.crosstab(
-    #     index=[policy_iterator.data_lagged["A_1"], policy_iterator.data_lagged["C_1"]],
-    #     columns=policy_iterator.data_lagged["X"],
-    #     normalize="index")
-    # print(counts)
-    # sys.exit()
-
-    # sns.histplot(
-    #     data=policy_iterator.data_lagged, 
-    #     x="X_1",
-    #     hue="A_1")
-    # plt.show()
-
-    # sys.exit()
-
     iter_policy = policy_iterator.policy_iteration()
     print(f"{iter_policy.head(50)=}")
 
     # Save iterated policy specs
     iter_specs = modify_specs(state_specs, dag_specs, "state", iter_policy)
-    # print(iter_specs["A"]['kernel'])
     with open('config/iterated_specs.yaml', 'w') as outfile:
         yaml.dump(iter_specs, outfile, default_flow_style=False)
 

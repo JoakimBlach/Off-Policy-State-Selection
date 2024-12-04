@@ -490,3 +490,97 @@ def plot_results(res):
     plt.tight_layout()
 
     plt.show()
+
+def modify_specs(state_specs, dag_specs, state_key, policy):
+
+    new_dag_specs = copy.deepcopy(dag_specs)
+
+    if state_specs[state_key] is None:
+        # for j, (action_name, action_dom) in enumerate(zip(action_names, action_var_domains)):
+        for action_name in policy.columns:
+            action_var_name = action_name.split("_")[0]
+
+            new_dag_specs[action_var_name] = {
+                'kernel': {
+                    'type': 'constant',
+                    'noise': 0,
+                    'value': policy.loc[0, action_name].item(),
+                    'terms': None
+                },
+                'dependencies': None}
+
+        return new_dag_specs
+
+    # Create proper lag from action perspective
+    action_lags = []
+    for lag in list(state_specs["action"].keys())[::-1]:
+        action_lags.append(lag)
+    action_lag = max(action_lags)
+    
+    # subtract action-lag from state in specs
+    # TODO: This might be buggy!
+    state_spec = {}
+    for lag in list(state_specs[state_key].keys())[::-1]:
+        state_spec[lag - action_lag] = state_specs[state_key][lag]
+
+    # Set policy
+    for _, action_name in enumerate(policy.columns):
+        action_var_name = action_name.split("_")[0]
+        action_domain = policy[action_name].unique().tolist()
+        sample_domain = dag_specs[action_var_name]['kernel']['sample_domain']
+
+        # Type
+        new_dag_specs[action_var_name] = {
+            'kernel': {
+                'type': 'linear',
+                'noise': 0,
+                'lower_bound': min(sample_domain),
+                'upper_bound': max(sample_domain),
+                'sample_domain': sample_domain,
+                'terms': [],
+            },
+            'dependencies':state_spec}
+
+
+        # Fill out tree
+        for state in policy.index.drop_duplicates():
+
+            term = {}
+            term['value'] = 0
+            term['variables'] = None
+
+            # Get output
+            term['intercept'] = policy.loc[state, action_name].item()
+
+            # Construct indicators
+            term['indicators'] = []
+
+            k = 0
+            for lag in sorted(list(state_spec.keys()), reverse=True):
+                # input_[lag] = {}
+                for name in state_spec[lag]:
+                    if isinstance(state, tuple):
+                        # input_[lag][name] = state[k]
+                        term['indicators'].append(
+                            {
+                                "type": "equal_to",
+                                "variable": {lag: name},
+                                "threshold": state[k]
+
+                            }
+                        )
+                    else:
+                        # input_[lag][name] = state
+                        term['indicators'].append(
+                            {
+                                "type": "equal_to",
+                                "variable": {lag: name},
+                                "threshold": state
+
+                            }
+                        )
+                    k += 1
+
+            new_dag_specs[action_var_name]['kernel']["terms"].append(term)
+
+    return new_dag_specs
