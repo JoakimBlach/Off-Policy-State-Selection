@@ -15,22 +15,12 @@ sys.path.insert(0,'/Users/joakim.blach.andersen/Documents/PhD/graph_simulator')
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
-from matplotlib.pyplot import cm
-
-import numpy as np
-import pandas as pd
-import seaborn as sns
 import graph_simulator
 import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 from joblib import Parallel, delayed
-from scipy import optimize
-from scipy.integrate import quad
-from MDP_utils import PolicyIterator
-from MDP_plot import plot_results
-from MDP_utils import DeterministicPolicy
+from MDP_utils import PolicyIterator, plot_results
 
 from functools import wraps
 import time

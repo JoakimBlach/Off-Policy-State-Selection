@@ -6,7 +6,6 @@ font = {'fontname':'Helvetica'}
 
 files = ["output/example_1.pkl", "output/example_2.pkl", "output/example_3.pkl"]
 titles = ["(a)", "(b)", "(c)"]
-# files = ["output/pricing_confounded_specs_output.pkl"]
 
 fig, ax = plt.subplots(1, len(files), figsize=(10, 3))
 
@@ -68,18 +67,6 @@ for k, filename in enumerate(files):
 
     yabs_max = abs(max(ax[k].get_ylim(), key=abs))
     ax[k].set_ylim(ymin=-yabs_max, ymax=yabs_max)
-    # ax[k].set_ylabel("Cumulative Reward")
-    # ax[k].set_xlabel("Time")
-    # ax[k].legend(loc = "upper right")
-
-# plt.rcParams.update({
-#     "text.usetex": True,
-#     "font.family": "sans-serif",
-#     "font.sans-serif": "Helvetica",
-# })
-
-# plt.rcParams['text.usetex'] = True
-# plt.rcParams['text.latex.preamble'] = [r'\usepackage{lmodern}']
 
 fig.text(0, 0.5, "Cumulative Reward", va='center', rotation='vertical', **font)
 fig.text(0.5, 0.02, "Time", va='center', **font)
